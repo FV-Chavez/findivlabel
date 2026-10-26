@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#f5f8fa" />
+  <meta name="description" content="Upload an Excel workbook and create A4 print-ready name and address labels." />
+  <title>FISLabelStudio — Excel to Print-Ready Labels</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/styles.css" />
+  <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <script defer src="/app.js"></script>
+</head>
+<body>
+  <div class="site-shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-symbol"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M6 3.5h8l4 4V20H6a2 2 0 0 1-2-2V5.5a2 2 0 0 1 2-2Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 3.5V8h4M8 12h8M8 16h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><span>FISLabel<span class="brand-light">Studio</span></span></div>
+      <div class="topbar-right"><span class="privacy-pill"><span class="green-dot"></span>Private · browser-based</span><span class="top-tag">PRINT UTILITY</span></div>
+    </header>
+
+    <main>
+
+      <section class="intro" aria-label="Label Studio controls">
+        <div class="intro-main">
+          <div class="intro-copy">
+            <div class="eyebrow">SPREADSHEET TO PDF</div>
+            <h1>Beautifully aligned labels.<br /><span>Ready to print.</span></h1>
+            <p>Turn names and addresses into precise, print-ready A4 label sheets in a few clicks.</p>
+          </div>
+          <nav class="hero-actions" aria-label="File and print controls">
+            <details id="settingsMenu" class="settings-menu">
+              <summary class="toolbar-action settings-trigger" aria-label="Open print settings">
+                <svg aria-hidden="true" width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M4 7h16M4 17h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="9" cy="7" r="2.5" fill="white" stroke="currentColor" stroke-width="1.8"/><circle cx="15" cy="17" r="2.5" fill="white" stroke="currentColor" stroke-width="1.8"/></svg>
+                <span>Print settings</span>
+                <svg class="chevron" aria-hidden="true" width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="m6 9 6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </summary>
+              <div class="settings-popover" role="group" aria-label="Print layout settings">
+                <div class="settings-title"><strong>Print settings</strong><span>02 · Layout</span></div>
+                <div class="fixed-layout"><span id="pageDimensions">A4 · 210 × 297 mm</span><span class="fixed-tag" id="gridSummary">2 × 6 · 12 labels</span></div>
+                <div id="dimensionReadout" class="dimension-readout">Each label · 105 × 49.5 mm</div>
+                <div class="setting-group-title">PAGE GRID <button id="resetLayout" type="button" class="reset-layout">Reset to 2 × 6</button></div>
+                <div class="settings-two-up">
+                  <label class="number-setting" for="columns"><span>Columns</span><input type="number" inputmode="numeric" id="columns" min="1" max="5" step="1" value="2" /></label>
+                  <label class="number-setting" for="rows"><span>Rows</span><input type="number" inputmode="numeric" id="rows" min="1" max="12" step="1" value="6" /></label>
+                </div>
+                <div class="settings-two-up">
+                  <label class="number-setting" for="orientation"><span>Orientation</span><select id="orientation"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></label>
+                  <label class="number-setting" for="outerMargin"><span>Page margin (mm)</span><input type="number" inputmode="decimal" id="outerMargin" min="0" max="20" step="0.5" value="0" /></label>
+                </div>
+                <div class="settings-two-up">
+                  <label class="number-setting" for="columnGap"><span>Column gap (mm)</span><input type="number" inputmode="decimal" id="columnGap" min="0" max="15" step="0.5" value="0" /></label>
+                  <label class="number-setting" for="rowGap"><span>Row gap (mm)</span><input type="number" inputmode="decimal" id="rowGap" min="0" max="15" step="0.5" value="0" /></label>
+                </div>
+                <details class="advanced-layout" id="advancedLayout">
+                  <summary>Customize individual column widths & row heights <span>▾</span></summary>
+                  <p>Set relative sizes. A value of 2 uses twice the available space of a value of 1. All sizes automatically fit the selected page.</p>
+                  <div class="weight-group-title"><strong>Column widths</strong><button type="button" id="equalColumns">Make equal</button></div>
+                  <div id="columnWeights" class="weights-grid"></div>
+                  <div class="weight-group-title"><strong>Row heights</strong><button type="button" id="equalRows">Make equal</button></div>
+                  <div id="rowWeights" class="weights-grid"></div>
+                </details>
+                <div class="setting"><div class="setting-header"><label for="fontSize">Font size</label><output id="fontSizeOutput" for="fontSize">12.5 pt</output></div><input id="fontSize" type="range" min="9" max="15" step="0.5" value="12.5" /></div>
+                <div class="setting"><div class="setting-header"><label for="labelPadding">Left padding</label><output id="paddingOutput" for="labelPadding">4 mm</output></div><input id="labelPadding" type="range" min="2" max="12" step="1" value="4" /></div>
+                <div class="setting setting-color"><label for="borderColor">Divider colour</label><span class="color-picker"><input id="borderColor" type="color" value="#248cad" aria-label="Choose divider colour"/><output id="colorOutput" for="borderColor">#248CAD</output></span></div>
+                <div class="hint"><span>The grid updates the preview and all PDF downloads immediately. No outer border is drawn. With zero margins and gaps, divider lines reach the page edges. Very small labels may need smaller text.</span></div>
+              </div>
+            </details>
+            <div id="dropzone" class="toolbar-action upload-trigger" role="button" tabindex="0" aria-label="Upload Excel spreadsheet">
+              <input id="fileInput" type="file" accept=".xlsx,.xls" hidden />
+              <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M4 16v4h16v-4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span>Upload Excel</span>
+            </div>
+          </nav>
+        </div>
+        <div class="intro-meta">
+          <div class="column-info">Reads <strong>names C3:C</strong> · <strong>addresses G3:G</strong> · <strong>numbers B3:B</strong></div>
+          <div id="fileSummary" class="file-summary file-summary-compact hidden">
+            <div class="file-symbol">XLS</div><div class="file-detail"><strong id="filename"></strong><span id="fileDescription"></span></div>
+            <button id="clearBtn" type="button" class="icon-button" title="Remove spreadsheet" aria-label="Remove spreadsheet">×</button>
+          </div>
+          <div id="sheetContainer" class="sheet-select sheet-select-compact hidden"><label for="sheetSelect">Worksheet</label><select id="sheetSelect"></select></div>
+        </div>
+      </section>
+
+      <div class="workspace">
+        <div class="download-column">
+          <section class="download-panel"><div class="download-header"><div class="download-icon"><svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M12 3v12m0 0-4-4m4 4 4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div><div><strong>Generate & download</strong><p id="downloadSummary">Upload a spreadsheet to enable downloads.</p></div></div>
+            <div class="export-name-field">
+              <div class="export-name-heading"><label for="exportName">Rename your PDF</label><span>BEFORE DOWNLOAD</span></div>
+              <div class="export-name-input-wrap">
+                <input type="text" id="exportName" name="exportName" maxlength="100" placeholder="e.g. Fairview-Address-Labels" autocomplete="off" spellcheck="false" aria-describedby="exportNameHelp" value="FISLabels" />
+                <span class="export-name-ext" aria-hidden="true">.pdf</span>
+              </div>
+              <p id="exportNameHelp" class="export-name-hint">Combined file: <strong id="combinedNamePreview">FISLabels.pdf</strong><br>Separate pages: <strong id="individualNamePreview">FISLabels-page-01-of-01.pdf</strong></p>
+            </div>
+            <div class="download-group-header"><strong>Individual PDF downloads</strong><span>NO ZIP REQUIRED</span></div>
+            <button id="downloadCurrent" class="primary-button" disabled><span id="currentPageLabel">Download Page 1 (PDF)</span><span class="button-trail">↓</span></button>
+            <div class="page-download-heading"><span>Select pages to download in bulk</span><span id="pageListCount">0 pages</span></div>
+            <div class="page-selection-toolbar"><button id="selectAllPages" type="button" disabled>Select all</button><button id="clearSelection" type="button" disabled>Clear selection</button><span id="selectedCount" aria-live="polite">0 selected</span></div>
+            <div id="pageDownloads" class="page-download-list" role="list" aria-label="Download each label page as a separate PDF"><p class="page-list-empty">Upload a spreadsheet to view individual pages.</p></div>
+            <div class="selection-actions">
+              <button id="downloadSelected" class="primary-button" disabled><span id="selectedButtonLabel">Save selected as separate PDFs</span><span class="button-trail">↓</span></button>
+              <button id="downloadSelectedZip" class="secondary-button" disabled><span>Download selected PDFs as ZIP</span><span>↓</span></button>
+              <p class="selection-hint">For separate files, supported browsers let you choose a folder. Other browsers may ask you to allow multiple downloads. ZIP is an alternative containing individually printable PDFs.</p>
+            </div>
+            <div class="bulk-divider"><span>Other download options</span></div>
+            <button id="downloadCombined" class="secondary-button" disabled><span>Download combined PDF (all pages)</span><span>↓</span></button>
+            <button id="downloadZip" class="secondary-button" disabled><span id="zipLabel">Download separate PDFs (.zip)</span><span>↓</span></button><div id="status" class="status-message" role="status" aria-live="polite"></div><p class="privacy-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="5" y="10" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.6"/></svg>Your spreadsheet stays on this device. No account, database or server uploads.</p></section>
+        </div>
+        <div class="preview-column">
+          <section class="preview-panel"><div class="preview-heading"><div><div class="preview-subtitle">LIVE PREVIEW</div><h2>Your label sheet</h2></div><span id="orientationBadge" class="a4-pill">A4 · PORTRAIT</span></div><div class="stats"><div class="stat"><strong id="recordCount">0</strong><span>Records found</span></div><div class="stat"><strong id="pageCount">0</strong><span>PDF pages</span></div><div class="stat"><strong id="labelsPerPage">12</strong><span>Labels per page</span></div></div><div class="paper-container"><div id="paper" class="paper" role="img" aria-label="A4 preview of address labels"><div id="paperGrid" class="paper-grid"></div></div></div><div class="preview-bottom"><span id="pageLabel">Page 1 of 1</span><div class="pager"><button id="prevBtn" aria-label="Previous page" disabled>←</button><button id="nextBtn" aria-label="Next page" disabled>→</button></div></div><div class="preview-disclaimer">Preview matches your grid settings. PDF uses A4 with no outer border. Print at <b>Actual size / 100%</b>; zero page margins require a printer supporting <b>borderless A4</b> to print at the edges.</div></section>
+        </div>
+      </div>
+    </main>
+    <footer><span>FISLabelStudio · Print with confidence</span><span>Built for efficient mail & address labelling</span></footer>
+  </div>
+</body>
+</html>
